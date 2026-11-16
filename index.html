@@ -128,7 +128,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#F8FAFC}
     <div>ระบบงานบุคคลอิเล็กทรอนิกส์<br>โรงเรียนกาญจนาภิเษกวิทยาลัย สุราษฎร์ธานี</div>
   </div>
   <div class="login-card">
-    <div id="inAppBar" class="err hidden">กำลังเปิดในแอป (เช่น LINE / Gmail) ซึ่ง Google ไม่อนุญาตให้ลงชื่อเข้าใช้ กรุณากด ⋮ หรือ แชร์ → <b>เปิดใน Chrome / Safari</b></div>
+    <div id="inAppBar" class="err hidden stack">กำลังเปิดในเบราว์เซอร์ของแอป ซึ่ง Google ไม่อนุญาตให้ลงชื่อเข้าใช้ กรุณาเปิดในเบราว์เซอร์ของเครื่อง<a id="openExt" class="btn primary block" rel="noopener">เปิดใน Chrome</a><span class="small">หรือกด ⋮ / แชร์ → เปิดในเบราว์เซอร์</span></div>
     <label class="check small"><input type="checkbox" id="remember"> จดจำอุปกรณ์นี้ 30 วัน (ไม่ติ๊กบนเครื่องส่วนกลาง)</label>
     <div class="stack" style="align-items:center">
       <div class="small muted">ครูและบุคลากรที่มีบัญชี @kjst.ac.th</div>
@@ -176,7 +176,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#F8FAFC}
  * KJST e-HR v3 — หน้าเว็บ (Single Page)
  * ============================================================ */
 const TOKEN_KEY = 'kjst_ehr_token';
-const PAGE_VERSION = '3.1.0';
+const PAGE_VERSION = '3.1.1';
 const ST = [
   null,
   { t: 'มาปฏิบัติงาน', s: 'มา', k: 's1', c: '#059669' },
@@ -250,9 +250,20 @@ async function boot() {
 /** เบราว์เซอร์ในแอป (LINE, Facebook, Gmail ฯลฯ) — Google ไม่อนุญาตให้ Sign in ในนั้น */
 function inAppCheck() {
   const ua = navigator.userAgent || '';
-  if (!/Line\/|FBAN|FBAV|Instagram|GSA\/|; wv\)|WebView/i.test(ua)) return;
+  if (!/Line\/|FBAN|FBAV|FB_IAB|Instagram|GSA\/|; wv\)|WebView|MicroMessenger|TikTok/i.test(ua)) return;
   if (/Line\//i.test(ua) && location.search.indexOf('openExternalBrowser') < 0) {
     location.replace(location.pathname + (location.search ? location.search + '&' : '?') + 'openExternalBrowser=1'); return;
+  }
+  const url = location.origin + location.pathname;
+  const btn = $('openExt');
+  if (/Android/i.test(ua)) {
+    // Android: เปิดด้วย Chrome โดยตรง (ถ้าไม่มี Chrome จะเปิดลิงก์ปกติ)
+    btn.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(url) + ';end';
+    btn.textContent = 'เปิดใน Chrome';
+  } else {
+    btn.href = url; btn.target = '_blank';
+    btn.textContent = 'คัดลอกลิงก์ไปเปิดใน Safari';
+    btn.onclick = ev => { ev.preventDefault(); copyText(url); };
   }
   $('inAppBar').classList.remove('hidden');
 }
